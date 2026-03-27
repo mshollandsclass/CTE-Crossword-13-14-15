@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virginia CTE Crossword</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:    #1a1209;
+  --paper:  #fdf8f0;
+  --cream:  #f5ede0;
+  --gold:   #c9860a;
+  --blue:   #15407a;
+  --lt-blue:#dce8f5;
+  --green:  #166534;
+  --lt-grn: #dcfce7;
+  --red:    #991b1b;
+  --lt-red: #fee2e2;
+  --cell:   28px;
+  --gap:    1px;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  min-height: 100vh;
+}
+
+header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 14px 20px 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  border-bottom: 4px solid var(--gold);
+}
+
+.masthead-title {
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  font-style: italic;
+}
+
+.masthead-sub {
+  font-size: 0.78rem;
+  color: #b0a898;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-style: normal;
+  font-family: 'Arial Narrow', Arial, sans-serif;
+  flex: 1;
+}
+
+.rule-note {
+  font-size: 0.72rem;
+  font-family: Arial, sans-serif;
+  background: var(--gold);
+  color: var(--ink);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+}
+
+#top-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+#active-clue {
+  flex: 1;
+  background: white;
+  border: 1.5px solid #d4c9b8;
+  border-left: 5px solid var(--blue);
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  border-radius: 0 6px 6px 0;
+  min-height: 48px;
+  min-width: 200px;
+}
+
+#active-clue .num { font-weight: 900; color: var(--blue); }
+#active-clue .ph  { color: #9c8f82; font-style: italic; }
+
+#status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: #e8e0d8;
+  color: #5a4e41;
+  min-width: 120px;
+  text-align: center;
+}
+
+#controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: Arial, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+.btn:active { transform: scale(0.95); }
+.btn-verify { background: var(--blue); color: #fff; }
+.btn-verify:hover { background: #0e2f5c; }
+.btn-reveal { background: var(--gold); color: #fff; }
+.btn-reveal:hover { background: #a0690a; }
+.btn-clear  { background: #5a4e41; color: #fff; }
+.btn-clear:hover  { background: #3e3428; }
+
+#content {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+#grid-wrap {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 0 0 auto;
+}
+
+#grid {
+  display: inline-grid;
+  background: var(--ink);
+  gap: var(--gap);
+  border: 2px solid var(--ink);
+}
+
+.sq {
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--ink);
+  position: relative;
+}
+
+.sq.W { background: var(--paper); cursor: text; }
+.sq.W:hover { background: #fdfaf5; }
+.sq.HL  { background: var(--lt-blue); }
+.sq.SEL { background: var(--blue); }
+.sq.SEL .num { color: #cfe1f7 !important; }
+.sq.SEL input { color: #fff !important; }
+.sq.OK  { background: var(--lt-grn); }
+.sq.OK input { color: var(--green) !important; }
+.sq.BAD { background: var(--lt-red); }
+.sq.BAD input { color: var(--red) !important; }
+
+.num {
+  position: absolute;
+  top: 1px; left: 2px;
+  font-size: 7px;
+  font-weight: 900;
+  font-family: Arial, sans-serif;
+  color: var(--ink);
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+  user-select: none;
+}
+
+.sq input {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  border: none; outline: none;
+  background: transparent;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  font-family: Georgia, serif;
+  color: var(--ink);
+  text-transform: uppercase;
+  padding-top: 7px;
+  cursor: pointer;
+  caret-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#clue-panel {
+  flex: 1 1 260px;
+  max-width: 400px;
+  max-height: 560px;
+  overflow-y: auto;
+  border: 1.5px solid #d4c9b8;
+  border-radius: 8px;
+  background: white;
+  font-family: Arial, sans-serif;
+}
+
+.panel-section-head {
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  z-index: 5;
+}
+
+.clue-row {
+  display: flex;
+  gap: 7px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  cursor: pointer;
+  border-bottom: 1px solid #f0e8df;
+  transition: background 0.1s;
+}
+.clue-row:hover { background: #fdf5eb; }
+.clue-row.ACT   { background: var(--lt-blue); border-left: 3px solid var(--blue); padding-left: 7px; }
+.cn { font-weight: 900; color: var(--blue); min-width: 22px; flex-shrink: 0; }
+
+#unplaced-wrap {
+  margin-top: 14px;
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 6px;
+  padding: 9px 13px;
+  font-family: Arial, sans-serif;
+  font-size: 0.78rem;
+  color: #78350f;
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .masthead-title { font-size: 1.25rem; }
+  :root { --cell: 23px; }
+  .sq input { font-size: 11px; }
+  .num { font-size: 6px; }
+  #clue-panel { max-height: 300px; max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="masthead-title">Virginia CTE Crossword</span>
+  <span class="masthead-sub">Competency 13, 14 &amp; 15 Vocab</span>
+  <span class="rule-note">⚠ Multi-word answers: no spaces</span>
+</header>
+
+<div id="shell">
+  <div id="top-bar">
+    <div id="active-clue"><span class="ph">Click a cell to see its clue.</span></div>
+    <div id="status">—</div>
+  </div>
+
+  <div id="controls">
+    <button class="btn btn-verify" onclick="checkAll()">✓ Check</button>
+    <button class="btn btn-reveal" onclick="revealAll()">◉ Reveal All</button>
+    <button class="btn btn-clear"  onclick="clearAll()">✕ Clear</button>
+  </div>
+
+  <div id="content">
+    <div id="grid-wrap"><div id="grid"></div></div>
+    <div id="clue-panel">
+      <div class="panel-section-head">↔ ACROSS</div>
+      <div id="across-body"></div>
+      <div class="panel-section-head">↕ DOWN</div>
+      <div id="down-body"></div>
+    </div>
+  </div>
+
+  <div id="unplaced-wrap"></div>
+</div>
+
+<script>
+'use strict';
+
+const WORDS = [
+  { disp:'Abilities',        grid:'ABILITIES',        clue:'The things you are naturally good at or have learned how to do well.' },
+  { disp:'Achievement',      grid:'ACHIEVEMENT',      clue:'Reaching a goal or finishing a difficult task through hard work.' },
+  { disp:'Attitude',         grid:'ATTITUDE',         clue:'The way you choose to think and act toward your work and other people.' },
+  { disp:'Bias',             grid:'BIAS',             clue:'Having a preference for one thing over another that makes it hard to be fair.' },
+  { disp:'Change',           grid:'CHANGE',           clue:'When something becomes different than it was before.' },
+  { disp:'Consequences',     grid:'CONSEQUENCES',     clue:'The things that happen as a direct result of the choices you make.' },
+  { disp:'Dependability',    grid:'DEPENDABILITY',    clue:'Being the person that others can always count on to do what you said you would do.' },
+  { disp:'Discrimination',   grid:'DISCRIMINATION',   clue:'Treating someone unfairly because of who they are or what group they belong to.' },
+  { disp:'Certification',    grid:'CERTIFICATION',    clue:'Getting an official paper that proves you have reached a certain level of skill or success.' },
+  { disp:'Credentials',      grid:'CREDENTIALS',      clue:'The qualities, experiences, or degrees that show you are the right person for a job.' },
+  { disp:'Employability',    grid:'EMPLOYABILITY',    clue:'Having the right skills and traits that make companies want to hire you.' },
+  { disp:'Goal',             grid:'GOAL',             clue:'The specific thing you are working hard to achieve.' },
+  { disp:'Lifelong Learning',grid:'LIFELONGLEARNING', clue:'Choosing to keep learning new things throughout your entire life, even after you finish school.' },
+  { disp:'Network',          grid:'NETWORK',          clue:'A group of people you stay in contact with to help each other with work or shared interests.' },
+  { disp:'Skill set',        grid:'SKILLSET',         clue:'The total collection of all the different things you know how to do.' },
+  { disp:'Efficiency',       grid:'EFFICIENCY',       clue:'Using time and resources wisely to complete a task with minimal waste.' },
+  { disp:'Labor',            grid:'LABOR',            clue:'The physical or mental effort used to get work done.' },
+  { disp:'Productivity',     grid:'PRODUCTIVITY',     clue:'The amount of work produced compared to the time and effort put in.' },
+  { disp:'Stakeholders',     grid:'STAKEHOLDERS',     clue:'People who have an interest in or are affected by the success of a business or project.' },
+];
+
+/* ═══════════════════════════════════════
+   CROSSWORD ENGINE
+═══════════════════════════════════════ */
+class CW {
+  constructor(N=36){ this.N=N; this.G=Array.from({length:N},()=>Array(N).fill(null)); this.placed=[]; }
+  ok(r,c){ return r>=0&&r<this.N&&c>=0&&c<this.N; }
+
+  canPlace(word,r0,c0,h){
+    const len=word.length,dr=h?0:1,dc=h?1:0,r1=r0+dr*(len-1),c1=c0+dc*(len-1);
+    if(!this.ok(r0,c0)||!this.ok(r1,c1)) return false;
+    if(this.ok(r0-dr,c0-dc)&&this.G[r0-dr][c0-dc]) return false;
+    if(this.ok(r1+dr,c1+dc)&&this.G[r1+dr][c1+dc]) return false;
+    let hits=(this.placed.length===0);
+    for(let i=0;i<len;i++){
+      const r=r0+dr*i,c=c0+dc*i,cell=this.G[r][c];
+      if(cell){
+        if(cell.ch!==word[i]) return false;
+        if(!cell.pl.some(p=>p.h!==h)) return false;
+        hits=true;
+      } else {
+        if(h){ if((this.ok(r-1,c)&&this.G[r-1][c])||(this.ok(r+1,c)&&this.G[r+1][c])) return false; }
+        else { if((this.ok(r,c-1)&&this.G[r][c-1])||(this.ok(r,c+1)&&this.G[r][c+1])) return false; }
+      }
+    }
+    return hits;
+  }
+
+  score(word,r0,c0,h){
+    const len=word.length,dr=h?0:1,dc=h?1:0,mid=this.N/2;
+    let x=0,dist=0;
+    for(let i=0;i<len;i++){const r=r0+dr*i,c=c0+dc*i;if(this.G[r][c])x++;dist+=Math.abs(r-mid)+Math.abs(c-mid);}
+    return x*120-dist*0.4;
+  }
+
+  place(wo,r0,c0,h){
+    const word=wo.grid,len=word.length,dr=h?0:1,dc=h?1:0,p={wo,r0,c0,h,num:0};
+    for(let i=0;i<len;i++){const r=r0+dr*i,c=c0+dc*i;if(!this.G[r][c])this.G[r][c]={ch:word[i],pl:[]};this.G[r][c].pl.push(p);}
+    this.placed.push(p);
+  }
+
+  build(words){
+    const sorted=[...words].sort((a,b)=>b.grid.length-a.grid.length);
+    const mid=Math.floor(this.N/2);
+    const first=sorted[0];
+    this.place(first,mid,Math.floor((this.N-first.grid.length)/2),true);
+    const Q=new Set(sorted.slice(1));
+    for(let pass=0;pass<8;pass++){
+      for(const wo of [...Q]){
+        const word=wo.grid; let best=null,bs=-Infinity;
+        for(const p of this.placed){
+          const pw=p.wo.grid,dr=p.h?0:1,dc=p.h?1:0;
+          for(let pi=0;pi<pw.length;pi++){
+            for(let wi=0;wi<word.length;wi++){
+              if(pw[pi]!==word[wi]) continue;
+              const pr=p.r0+dr*pi,pc=p.c0+dc*pi;
+              if(p.h){ const r=pr-wi,c=pc; if(this.canPlace(word,r,c,false)){const s=this.score(word,r,c,false);if(s>bs){bs=s;best={r,c,h:false};}}}
+              else   { const r=pr,c=pc-wi; if(this.canPlace(word,r,c,true)) {const s=this.score(word,r,c,true); if(s>bs){bs=s;best={r,c,h:true}; }}}
+            }
+          }
+        }
+        if(best){this.place(wo,best.r,best.c,best.h);Q.delete(wo);}
+      }
+      if(!Q.size) break;
+    }
+    let n=1;
+    for(let r=0;r<this.N;r++) for(let c=0;c<this.N;c++){
+      const cell=this.G[r][c]; if(!cell) continue;
+      const starts=cell.pl.filter(p=>p.r0===r&&p.c0===c);
+      if(starts.length){starts.forEach(p=>p.num=n);n++;}
+    }
+    return{placed:this.placed,unplaced:[...Q]};
+  }
+
+  bounds(){
+    let r0=this.N,r1=0,c0=this.N,c1=0;
+    for(let r=0;r<this.N;r++) for(let c=0;c<this.N;c++)
+      if(this.G[r][c]){r0=Math.min(r0,r);r1=Math.max(r1,r);c0=Math.min(c0,c);c1=Math.max(c1,c);}
+    return{r0,r1,c0,c1};
+  }
+}
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let cw,placed,inputs={},activeP=null,selR=-1,selC=-1,dir='h',rOff=0,cOff=0;
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+function init(){
+  cw=new CW(36);
+  const res=cw.build(WORDS);
+  placed=res.placed;
+  renderGrid();
+  renderClues();
+  if(res.unplaced.length){
+    const el=document.getElementById('unplaced-wrap');
+    el.style.display='';
+    el.innerHTML=`<strong>⚠ Words not placed:</strong> ${res.unplaced.map(w=>w.disp).join(', ')}`;
+  }
+}
+
+/* ═══════════════════════════════════════
+   GRID
+═══════════════════════════════════════ */
+function renderGrid(){
+  const b=cw.bounds(),pad=1;
+  rOff=Math.max(0,b.r0-pad); cOff=Math.max(0,b.c0-pad);
+  const rEnd=Math.min(cw.N-1,b.r1+pad),cEnd=Math.min(cw.N-1,b.c1+pad);
+  const rows=rEnd-rOff+1,cols=cEnd-cOff+1;
+  const G=document.getElementById('grid');
+  G.style.gridTemplateColumns=`repeat(${cols},var(--cell))`;
+  G.style.gridTemplateRows=`repeat(${rows},var(--cell))`;
+  G.innerHTML=''; inputs={};
+  for(let r=rOff;r<=rEnd;r++){
+    for(let c=cOff;c<=cEnd;c++){
+      const cell=cw.G[r][c];
+      const div=document.createElement('div');
+      div.className=cell?'sq W':'sq';
+      if(cell){
+        const starts=cell.pl.filter(p=>p.r0===r&&p.c0===c);
+        if(starts.length){const ns=document.createElement('span');ns.className='num';ns.textContent=starts[0].num;div.appendChild(ns);}
+        const inp=document.createElement('input');
+        inp.type='text';inp.maxLength=1;inp.autocomplete='off';inp.autocorrect='off';
+        inp.autocapitalize='characters';inp.spellcheck=false;
+        inp.dataset.r=r;inp.dataset.c=c;inp.dataset.ans=cell.ch;
+        inp.addEventListener('focus',()=>onFocus(r,c));
+        inp.addEventListener('keydown',e=>onKD(e,r,c,inp));
+        inp.addEventListener('input',e=>onIN(e,r,c,inp));
+        div.addEventListener('click',()=>inp.focus());
+        div.appendChild(inp);
+        inputs[r+','+c]=inp;
+      }
+      G.appendChild(div);
+    }
+  }
+}
+
+function gi(r,c){return inputs[r+','+c]||null;}
+function gc(r,c){return(cw.G[r]||[])[c]||null;}
+
+/* ═══════════════════════════════════════
+   FOCUS / HIGHLIGHT
+═══════════════════════════════════════ */
+function onFocus(r,c){
+  const cell=gc(r,c); if(!cell) return;
+  const hasH=cell.pl.some(p=>p.h),hasV=cell.pl.some(p=>!p.h);
+  if(selR===r&&selC===c){ if(hasH&&hasV) dir=(dir==='h')?'v':'h'; }
+  else { if(dir==='h'&&!hasH) dir='v'; if(dir==='v'&&!hasV) dir='h'; }
+  selR=r; selC=c;
+  activeP=cell.pl.find(p=>p.h===(dir==='h'))||cell.pl[0];
+  if(activeP) dir=activeP.h?'h':'v';
+  hilite(); showClue();
+}
+
+function hilite(){
+  document.querySelectorAll('.sq').forEach(el=>el.classList.remove('HL','SEL'));
+  if(!activeP) return;
+  const word=activeP.wo.grid,dr=activeP.h?0:1,dc=activeP.h?1:0;
+  for(let i=0;i<word.length;i++){
+    const r=activeP.r0+dr*i,c=activeP.c0+dc*i;
+    const inp=gi(r,c); if(!inp) continue;
+    if(r===selR&&c===selC) inp.parentElement.classList.add('SEL');
+    else inp.parentElement.classList.add('HL');
+  }
+}
+
+function showClue(){
+  const box=document.getElementById('active-clue');
+  if(!activeP){box.innerHTML='<span class="ph">Click a cell to see its clue.</span>';return;}
+  box.innerHTML=`<span class="num">${activeP.num} ${activeP.h?'Across':'Down'}:</span> ${activeP.wo.clue}`;
+  document.querySelectorAll('.clue-row').forEach(el=>el.classList.remove('ACT'));
+  const t=document.querySelector(`.clue-row[data-num="${activeP.num}"][data-dir="${activeP.h?'h':'v'}"]`);
+  if(t){t.classList.add('ACT');t.scrollIntoView({block:'nearest',behavior:'smooth'});}
+}
+
+/* ═══════════════════════════════════════
+   KEY / INPUT
+═══════════════════════════════════════ */
+function onKD(e,r,c,inp){
+  if(e.key==='Backspace'){
+    e.preventDefault();
+    if(inp.value){inp.value='';inp.parentElement.classList.remove('OK','BAD');return;}
+    if(!activeP) return;
+    const word=activeP.wo.grid,dr=activeP.h?0:1,dc=activeP.h?1:0;
+    for(let i=1;i<word.length;i++){
+      if(activeP.r0+dr*i===r&&activeP.c0+dc*i===c){
+        const pi=gi(activeP.r0+dr*(i-1),activeP.c0+dc*(i-1));
+        if(pi){pi.value='';pi.parentElement.classList.remove('OK','BAD');pi.focus();}
+        break;
+      }
+    }
+    return;
+  }
+  if(e.key==='Tab'){e.preventDefault();nextWord(e.shiftKey);return;}
+  const AM={ArrowRight:[0,1,'h'],ArrowLeft:[0,-1,'h'],ArrowDown:[1,0,'v'],ArrowUp:[-1,0,'v']};
+  if(AM[e.key]){e.preventDefault();const[dr,dc,nd]=AM[e.key];const ni=gi(r+dr,c+dc);if(ni){dir=nd;ni.focus();}return;}
+  if(e.key.length===1&&/[a-zA-Z]/.test(e.key)){inp.value='';inp.parentElement.classList.remove('OK','BAD');}
+}
+
+function onIN(e,r,c,inp){
+  const v=inp.value.toUpperCase().replace(/[^A-Z]/g,'');
+  inp.value=v?v[0]:'';
+  if(!inp.value||!activeP) return;
+  const word=activeP.wo.grid,dr=activeP.h?0:1,dc=activeP.h?1:0;
+  for(let i=0;i<word.length-1;i++){
+    if(activeP.r0+dr*i===r&&activeP.c0+dc*i===c){
+      const ni=gi(activeP.r0+dr*(i+1),activeP.c0+dc*(i+1));
+      if(ni) ni.focus(); break;
+    }
+  }
+}
+
+function nextWord(back=false){
+  const sorted=[...placed].sort((a,b)=>a.num!==b.num?a.num-b.num:(a.h?-1:1));
+  const idx=activeP?sorted.indexOf(activeP):0;
+  const nxt=sorted[(idx+(back?-1:1)+sorted.length)%sorted.length];
+  if(nxt){dir=nxt.h?'h':'v';const ni=gi(nxt.r0,nxt.c0);if(ni)ni.focus();}
+}
+
+/* ═══════════════════════════════════════
+   CLUES
+═══════════════════════════════════════ */
+function renderClues(){
+  const across=placed.filter(p=>p.h).sort((a,b)=>a.num-b.num);
+  const down  =placed.filter(p=>!p.h).sort((a,b)=>a.num-b.num);
+  function sec(bodyId,items,dirKey){
+    const body=document.getElementById(bodyId); body.innerHTML='';
+    for(const p of items){
+      const d=document.createElement('div');
+      d.className='clue-row'; d.dataset.num=p.num; d.dataset.dir=dirKey;
+      d.innerHTML=`<span class="cn">${p.num}.</span><span>${p.wo.clue}</span>`;
+      d.addEventListener('click',()=>{dir=p.h?'h':'v';activeP=p;selR=p.r0;selC=p.c0;const ni=gi(p.r0,p.c0);if(ni)ni.focus();else{hilite();showClue();}});
+      body.appendChild(d);
+    }
+  }
+  sec('across-body',across,'h');
+  sec('down-body',down,'v');
+}
+
+/* ═══════════════════════════════════════
+   CONTROLS
+═══════════════════════════════════════ */
+function checkAll(){
+  let ok=0,bad=0,blank=0;
+  for(const k in inputs){
+    const inp=inputs[k],sq=inp.parentElement;
+    sq.classList.remove('OK','BAD');
+    if(!inp.value){blank++;continue;}
+    if(inp.value===inp.dataset.ans){sq.classList.add('OK');ok++;}
+    else{sq.classList.add('BAD');bad++;}
+  }
+  const st=document.getElementById('status');
+  if(ok+bad===0){st.textContent='Type something first';st.style.color='#78350f';}
+  else if(bad===0&&blank===0){st.textContent='🎉 All correct!';st.style.color='#14532d';}
+  else{st.textContent=`✓ ${ok}  ✗ ${bad}`;st.style.color=bad?'#991b1b':'#14532d';}
+}
+
+function revealAll(){
+  for(const k in inputs){const inp=inputs[k];inp.value=inp.dataset.ans;inp.parentElement.classList.remove('BAD');inp.parentElement.classList.add('OK');}
+  const st=document.getElementById('status');st.textContent='Revealed ✓';st.style.color='#14532d';
+}
+
+function clearAll(){
+  for(const k in inputs){const inp=inputs[k];inp.value='';inp.parentElement.classList.remove('OK','BAD');}
+  const st=document.getElementById('status');st.textContent='—';st.style.color='#5a4e41';
+  document.getElementById('active-clue').innerHTML='<span class="ph">Click a cell to see its clue.</span>';
+  activeP=null;selR=-1;selC=-1;
+  document.querySelectorAll('.sq').forEach(el=>el.classList.remove('HL','SEL'));
+  document.querySelectorAll('.clue-row').forEach(el=>el.classList.remove('ACT'));
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
